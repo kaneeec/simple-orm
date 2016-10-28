@@ -34,7 +34,7 @@ public final class DbManager {
 
     /**
      * Register your {@link SQLiteOpenHelper} implementation. After the helper is registered, whole database
-     * structure is created and initialized. You can than use {@link DaoManager#getDao(Class)}
+     * structure is created and initialized. You can then use {@link DaoManager#getDao(Class)}
      * to get DAO implementations for desired classes.
      * <p/>
      * The helper defines your database name and version. It can also provide possible upgrade scripts between
@@ -45,24 +45,35 @@ public final class DbManager {
      *                         (they must be annotated with the {@link DbTable} annotation}
      * @see DaoManager
      */
-    public synchronized static final void registerHelper(SQLiteOpenHelper helperToRegister, Class<?>... entityClasses) throws IllegalAccessException, InstantiationException {
-        if (helper != null) {
-            Log.w(Const.TAG, "Another SQLiteOpenHelper is already registered. Skipping this one.");
-        } else {
-            helper = helperToRegister;
-            initDatabase(entityClasses);
+    public synchronized static final void registerHelper(SQLiteOpenHelper helperToRegister,
+                                                         Class<?>... entityClasses) throws
+            IllegalAccessException, InstantiationException {
+        if (initialized) {
+            Log.i(Const.TAG, "Database is already initialized. Skipping.");
+            return;
         }
+
+        if (entityClasses == null || entityClasses.length == 0) {
+            throw new IllegalArgumentException("No Entity classes have been specified.");
+        }
+
+        helper = helperToRegister;
+        initDatabase(entityClasses);
+
+        initialized = true;
     }
 
     /**
-     * Returns instance of database helper.
+     * Returns instance of database helper. It need to be registered with
+     * {@link #registerHelper(SQLiteOpenHelper, Class[])} before you call this method.
      *
      * @return database helper instance
      * @throws IllegalStateException in case there is no {@link SQLiteOpenHelper} implementation
      */
-    public synchronized static final SQLiteOpenHelper getInstance() {
+    public synchronized static final SQLiteOpenHelper getHelper() {
         if (helper == null) {
-            throw new IllegalStateException("There is no SQLiteOpenHelper implementation registered.");
+            throw new IllegalStateException(
+                    "There is no SQLiteOpenHelper implementation registered.");
         }
         return helper;
 
@@ -83,18 +94,10 @@ public final class DbManager {
         return columnNames;
     }
 
-    /**
-     * Initialize database - create tables for the given entities.
-     *
-     * @param entityClasses entity classes that were used to create a new database
-     */
-    private synchronized static void initDatabase(Class<?>... entityClasses) throws InstantiationException, IllegalAccessException {
-        if (entityClasses == null) {
-            throw new IllegalArgumentException("No Entity classes have been specified.");
-        }
-
+    private synchronized static void initDatabase(Class<?>... entityClasses) throws
+            InstantiationException, IllegalAccessException {
         for (Class<?> clazz : entityClasses) {
-            checkIfEntityClass(clazz);
+            validateEntityClass(clazz);
 
             DbTable table = clazz.getAnnotation(DbTable.class);
             tablesAndColumns.put(table.name(), getColumnNames(clazz));
@@ -104,7 +107,8 @@ public final class DbManager {
                 DaoQueryHelper<?> helper = (DaoQueryHelper<?>) table.mappingClass().newInstance();
                 DaoManager.registerDaoQueryHelper(clazz, helper);
             } catch (InstantiationException | IllegalAccessException e) {
-                Log.e(Const.TAG, "Unable to instantiate DaoQueryHelper for " + table.mappingClass(), e);
+                Log.e(Const.TAG, "Unable to instantiate DaoQueryHelper for " + table.mappingClass(),
+                        e);
                 throw e;
             }
         }
@@ -112,59 +116,39 @@ public final class DbManager {
         createTables(entityClasses);
     }
 
-    /**
-     * Automatically prepare tables for the given entity classes. All classes must be annotated
-     * with {@link DbTable}, they must have at least one field annotated with {@link DbColumn}
-     * and they must implement {@link BaseColumns} and {@link DaoQueryHelper} interfaces.
-     * <p/>
-     * Should only be called by {@link android.database.sqlite.SQLiteOpenHelper} implementation in onCreate method.
-     *
-     * @param entityClasses entity classes
-     * @see DbTable
-     * @see DbColumn
-     * @see BaseColumns
-     * @see DaoQueryHelper
-     */
     private synchronized static void createTables(Class<?>... entityClasses) {
-        if (initialized) {
-            Log.i(Const.TAG, "Tables have already been created. Skipping recreation.");
-            return;
-        }
-
-        if (entityClasses == null) {
-            throw new IllegalArgumentException("No Entity classes have been specified.");
-        }
-
         for (Class<?> clazz : entityClasses) {
-            checkIfEntityClass(clazz);
+            validateEntityClass(clazz);
 
-            // prepare SQL to execute
-            String sqlStart = String.format("create table %s (", clazz.getAnnotation(DbTable.class).name());
-            String sqlMiddle = "";
-            for (DbColumn column : getDbColumns(clazz)) {
-                sqlMiddle += String.format("%s %s %s, ", column.name(), column.type(), column.properties());
-            }
-
-            // remove the last comma
-            StringBuilder builder = new StringBuilder(sqlMiddle);
-            builder.replace(sqlMiddle.lastIndexOf(", "), sqlMiddle.lastIndexOf(", ") + 1, "");
-            sqlMiddle = builder.toString();
-
-            String sqlEnd = ");";
-
-            // execute CREATE TABLE SQL
-            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
             try {
+                String sql = composeCreateTableSql(clazz);
                 db.beginTransaction();
-                String sql = sqlStart + sqlMiddle + sqlEnd;
                 db.execSQL(sql);
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();
             }
         }
+    }
 
-        initialized = true;
+    private static String composeCreateTableSql(Class<?> clazz) {
+        String sqlStart = String
+                .format("create table %s (", clazz.getAnnotation(DbTable.class).name());
+        String sqlEnd = ");";
+
+        String sqlMiddle = "";
+        for (DbColumn column : getDbColumns(clazz)) {
+            sqlMiddle += String
+                    .format("%s %s %s, ", column.name(), column.type(), column.properties());
+        }
+
+        // remove the last comma
+        StringBuilder builder = new StringBuilder(sqlMiddle);
+        builder.replace(sqlMiddle.lastIndexOf(","), sqlMiddle.lastIndexOf(",") + 1, "");
+        sqlMiddle = builder.toString();
+
+        return sqlStart + sqlMiddle + sqlEnd;
     }
 
     private static List<String> getColumnNames(Class<?> clazz) {
@@ -188,23 +172,23 @@ public final class DbManager {
         return columns;
     }
 
-    private static void checkIfEntityClass(Class<?> clazz) {
-        if (!BaseColumns.class.isAssignableFrom(clazz)) {
-            throw new IllegalArgumentException(clazz + " does not implement BaseColumns interface.");
-        }
-
+    private static void validateEntityClass(Class<?> clazz) {
         DbTable classAnnotation = clazz.getAnnotation(DbTable.class);
         if (classAnnotation == null) {
             throw new IllegalArgumentException(clazz + " does not have @DbTable annotation.");
         }
 
-        boolean atLeastOneColumnAnnotation = false;
+        boolean baseColumnId = false;
         for (Field field : clazz.getDeclaredFields()) {
-            atLeastOneColumnAnnotation |= field.getAnnotation(DbColumn.class) != null;
+            DbColumn column = field.getAnnotation(DbColumn.class);
+            if (column != null && BaseColumns._ID.equals(column.name()) &&
+                    DbDataType.INTEGER == column.type()) {
+                baseColumnId = true;
+            }
         }
-        if (!atLeastOneColumnAnnotation) {
-            throw new IllegalArgumentException(clazz + " does not have any field annotated with @DbColumn annotation.");
+        if (!baseColumnId) {
+            throw new IllegalArgumentException(clazz +
+                    " does not have mandatory BaseColumn._ID field of DbDataType.INTEGER defined by @DbColumn annotation.");
         }
     }
-
 }

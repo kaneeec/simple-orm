@@ -96,18 +96,17 @@ public class DaoManager {
 
         @Override
         public T getById(int id) {
-            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames, BaseColumns._ID + " = ?", new String[]{String.valueOf(id)}, null, null, null)) {
-                return helper.cursorToObject(cursor);
+                if (cursor.moveToFirst()) {
+                    return helper.cursorToObject(cursor);
+                }
+                throw new IllegalStateException(String.format("No record found in table=%s for ID=%s.", id, tableName));
             }
         }
 
         @Override
         public List<T> getByIds(List<Integer> ids) {
-            if (ids == null || ids.isEmpty()) {
-                return Collections.emptyList();
-            }
-
             List<String> stringIds = Lists.transform(ids, new Function<Integer, String>() {
                 @Override
                 public String apply(Integer input) {
@@ -115,74 +114,59 @@ public class DaoManager {
                 }
             });
 
-            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames,
                     BaseColumns._ID + " IN " + Strings.makeSqlPlaceholders(stringIds.size()),
                     stringIds.toArray(new String[stringIds.size()]), null, null, null)) {
                 List<T> list = new ArrayList<>();
-                while (cursor.moveToNext()) {
+                for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                     list.add(helper.cursorToObject(cursor));
                 }
                 return list;
-            } catch (Exception e) {
-                Log.e(Const.TAG, e.getMessage(), e);
-                return Collections.emptyList();
             }
         }
 
         @Override
         public long create(T obj) {
             long id = -1;
-            if (obj != null) {
-                SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
-                try {
-                    db.beginTransaction();
-                    ContentValues values = helper.objectToContentValues(obj);
-                    id = db.insertOrThrow(tableName, null, values);
-                    helper.setId(obj, (int) id);
-                    db.setTransactionSuccessful();
-                } catch (Exception e) {
-                    Log.e(Const.TAG, e.getMessage(), e);
-                } finally {
-                    db.endTransaction();
-                }
+            SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
+            try {
+                db.beginTransaction();
+                ContentValues values = helper.objectToContentValues(obj);
+                id = db.insertOrThrow(tableName, null, values);
+                helper.setId(obj, (int) id);
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
             }
             return id;
         }
 
         @Override
         public void update(T obj) {
-            if (obj != null) {
-                SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
-                try {
-                    db.beginTransaction();
-                    ContentValues values = helper.objectToContentValues(obj);
-                    db.update(tableName, values, BaseColumns._ID + " = ?", new String[]{String.valueOf(helper.getId(obj))});
-                    db.setTransactionSuccessful();
-                } catch (Exception e) {
-                    Log.e(Const.TAG, e.getMessage(), e);
-                } finally {
-                    db.endTransaction();
-                }
+            SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
+            try {
+                db.beginTransaction();
+                ContentValues values = helper.objectToContentValues(obj);
+                db.update(tableName, values, BaseColumns._ID + " = ?", new String[]{String.valueOf(helper.getId(obj))});
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
             }
         }
 
         @Override
         public void delete(T obj) {
-            if (obj != null) {
-                delete(helper.getId(obj));
-            }
+            delete(helper.getId(obj));
         }
 
         @Override
         public void delete(int id) {
-            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
             try {
                 db.beginTransaction();
                 db.delete(tableName, BaseColumns._ID + " = ?", new String[]{String.valueOf(id)});
                 db.setTransactionSuccessful();
-            } catch (Exception e) {
-                Log.e(Const.TAG, e.getMessage(), e);
             } finally {
                 db.endTransaction();
             }
@@ -190,13 +174,11 @@ public class DaoManager {
 
         @Override
         public void deleteAll() {
-            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
             try {
                 db.beginTransaction();
                 db.execSQL("delete from " + tableName);
                 db.setTransactionSuccessful();
-            } catch (Exception e) {
-                Log.e(Const.TAG, e.getMessage(), e);
             } finally {
                 db.endTransaction();
             }
@@ -204,37 +186,26 @@ public class DaoManager {
 
         @Override
         public List<T> findAll() {
-            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames, null, null, null, null, null)) {
                 List<T> list = new ArrayList<>();
                 while (cursor.moveToNext()) {
                     list.add(helper.cursorToObject(cursor));
                 }
                 return list;
-            } catch (Exception e) {
-                Log.e(Const.TAG, e.getMessage(), e);
-                return Collections.emptyList();
             }
         }
 
         @Override
         public List<T> query(String query, String[] columnNames) {
-            if (query == null || query.isEmpty() || columnNames == null | columnNames.length == 0) {
-                return Collections.emptyList();
-            }
-
-            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getHelper().getReadableDatabase();
             try (Cursor cursor = db.rawQuery(query, columnNames)) {
                 List<T> list = new ArrayList<>();
                 while (cursor.moveToNext()) {
                     list.add(helper.cursorToObject(cursor));
                 }
                 return list;
-            } catch (Exception e) {
-                Log.e(Const.TAG, e.getMessage(), e);
-                return Collections.emptyList();
             }
         }
     }
-
 }
