@@ -27,12 +27,14 @@ import static org.junit.Assert.assertEquals;
 @RunWith(AndroidJUnit4.class)
 public class ExampleInstrumentedTest {
 
-    @Test
-    public void useAppContext() throws Exception {
-        Context context = InstrumentationRegistry.getTargetContext();
-        context.deleteDatabase("test.db");
+    public static final String DATABASE_NAME = "test.db";
 
-        DbHelperManager.registerHelper(new TestSQLiteHelper(context), new Class<?>[] { Entity.class });
+    @Test
+    public void testDbInsert() throws Exception {
+        Context context = InstrumentationRegistry.getTargetContext();
+        context.deleteDatabase(DATABASE_NAME);
+
+        DbManager.registerHelper(new TestSQLiteHelper(context), new Class<?>[] { Entity.class });
 
         Dao<Entity> dao = DaoManager.getDao(Entity.class);
         dao.create(new Entity("foo"));
@@ -44,7 +46,7 @@ public class ExampleInstrumentedTest {
     @DbTable(name = "EntityTable", mappingClass = EntityOrmMapping.class)
     private static final class Entity implements BaseColumns {
 
-        @DbColumn(name = "id", type = DbDataType.INTEGER, properties = "primary key autoincrement")
+        @DbColumn(name = _ID, type = DbDataType.INTEGER, properties = "primary key autoincrement")
         private Integer id;
 
         @DbColumn(name = "name", type = DbDataType.TEXT)
@@ -107,7 +109,7 @@ public class ExampleInstrumentedTest {
     private static final class TestSQLiteHelper extends SQLiteOpenHelper {
 
         public TestSQLiteHelper(Context context) {
-            super(context, "test.db", null, 1);
+            super(context, DATABASE_NAME, null, 1);
         }
 
         @Override

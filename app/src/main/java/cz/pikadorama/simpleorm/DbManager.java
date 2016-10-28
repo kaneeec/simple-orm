@@ -1,6 +1,7 @@
 package cz.pikadorama.simpleorm;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 import android.util.Log;
 
@@ -18,10 +19,54 @@ import cz.pikadorama.simpleorm.annotation.DbTable;
 import cz.pikadorama.simpleorm.dao.DaoQueryHelper;
 import cz.pikadorama.simpleorm.util.Const;
 
-public class DbUtil {
+
+/**
+ * Entry point of the DB framework. First of all, you need to register implementation of
+ * {@link SQLiteOpenHelper}, just skip {@link SQLiteOpenHelper#onCreate(SQLiteDatabase)}, it will be
+ * done automatically.
+ */
+public final class DbManager {
 
     private static final Map<String, List<String>> tablesAndColumns = new HashMap<>();
+
     private static boolean initialized = false;
+    private static SQLiteOpenHelper helper = null;
+
+    /**
+     * Register your {@link SQLiteOpenHelper} implementation. After the helper is registered, whole database
+     * structure is created and initialized. You can than use {@link DaoManager#getDao(Class)}
+     * to get DAO implementations for desired classes.
+     * <p/>
+     * The helper defines your database name and version. It can also provide possible upgrade scripts between
+     * versions.
+     *
+     * @param helperToRegister {@link SQLiteOpenHelper} implementation
+     * @param entityClasses    array of entity classes that you want to be handled automatically by the framework
+     *                         (they must be annotated with the {@link DbTable} annotation}
+     * @see DaoManager
+     */
+    public synchronized static final void registerHelper(SQLiteOpenHelper helperToRegister, Class<?>... entityClasses) throws IllegalAccessException, InstantiationException {
+        if (helper != null) {
+            Log.w(Const.TAG, "Another SQLiteOpenHelper is already registered. Skipping this one.");
+        } else {
+            helper = helperToRegister;
+            initDatabase(entityClasses);
+        }
+    }
+
+    /**
+     * Returns instance of database helper.
+     *
+     * @return database helper instance
+     * @throws IllegalStateException in case there is no {@link SQLiteOpenHelper} implementation
+     */
+    public synchronized static final SQLiteOpenHelper getInstance() {
+        if (helper == null) {
+            throw new IllegalStateException("There is no SQLiteOpenHelper implementation registered.");
+        }
+        return helper;
+
+    }
 
     /**
      * Returns list of columns names for the given table.
@@ -30,7 +75,7 @@ public class DbUtil {
      * @return list of column names
      * @throws IllegalArgumentException if the table does not exist
      */
-    synchronized static List<String> getColumnNames(String tableName) {
+    static List<String> getColumnNames(String tableName) {
         List<String> columnNames = tablesAndColumns.get(tableName);
         if (columnNames == null) {
             throw new IllegalArgumentException("There is no Table named " + tableName);
@@ -39,11 +84,11 @@ public class DbUtil {
     }
 
     /**
-     * Initialize DbUtil and data for {@link DaoManager}.
+     * Initialize database - create tables for the given entities.
      *
      * @param entityClasses entity classes that were used to create a new database
      */
-    synchronized static void initDatabase(Class<?>... entityClasses) throws InstantiationException, IllegalAccessException {
+    private synchronized static void initDatabase(Class<?>... entityClasses) throws InstantiationException, IllegalAccessException {
         if (entityClasses == null) {
             throw new IllegalArgumentException("No Entity classes have been specified.");
         }
@@ -80,7 +125,7 @@ public class DbUtil {
      * @see BaseColumns
      * @see DaoQueryHelper
      */
-    private static void createTables(Class<?>... entityClasses) {
+    private synchronized static void createTables(Class<?>... entityClasses) {
         if (initialized) {
             Log.i(Const.TAG, "Tables have already been created. Skipping recreation.");
             return;
@@ -97,18 +142,18 @@ public class DbUtil {
             String sqlStart = String.format("create table %s (", clazz.getAnnotation(DbTable.class).name());
             String sqlMiddle = "";
             for (DbColumn column : getDbColumns(clazz)) {
-                sqlMiddle += String.format("%s %s %s,", column.name(), column.type(), column.properties());
+                sqlMiddle += String.format("%s %s %s, ", column.name(), column.type(), column.properties());
             }
 
             // remove the last comma
             StringBuilder builder = new StringBuilder(sqlMiddle);
-            builder.replace(sqlMiddle.lastIndexOf(","), sqlMiddle.lastIndexOf(",") + 1, "");
+            builder.replace(sqlMiddle.lastIndexOf(", "), sqlMiddle.lastIndexOf(", ") + 1, "");
             sqlMiddle = builder.toString();
 
             String sqlEnd = ");";
 
             // execute CREATE TABLE SQL
-            SQLiteDatabase db = DbHelperManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
             try {
                 db.beginTransaction();
                 String sql = sqlStart + sqlMiddle + sqlEnd;

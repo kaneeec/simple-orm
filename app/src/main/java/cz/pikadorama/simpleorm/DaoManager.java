@@ -90,13 +90,13 @@ public class DaoManager {
             this.helper = checkAndGetQueryHelper(daoType);
             this.tableName = daoType.getAnnotation(DbTable.class).name();
 
-            List<String> columnNamesList = DbUtil.getColumnNames(tableName);
+            List<String> columnNamesList = DbManager.getColumnNames(tableName);
             this.columnNames = columnNamesList.toArray(new String[columnNamesList.size()]);
         }
 
         @Override
         public T getById(int id) {
-            SQLiteDatabase db = DbHelperManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames, BaseColumns._ID + " = ?", new String[]{String.valueOf(id)}, null, null, null)) {
                 return helper.cursorToObject(cursor);
             }
@@ -115,7 +115,7 @@ public class DaoManager {
                 }
             });
 
-            SQLiteDatabase db = DbHelperManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames,
                     BaseColumns._ID + " IN " + Strings.makeSqlPlaceholders(stringIds.size()),
                     stringIds.toArray(new String[stringIds.size()]), null, null, null)) {
@@ -134,11 +134,11 @@ public class DaoManager {
         public long create(T obj) {
             long id = -1;
             if (obj != null) {
-                SQLiteDatabase db = DbHelperManager.getInstance().getWritableDatabase();
+                SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
                 try {
                     db.beginTransaction();
                     ContentValues values = helper.objectToContentValues(obj);
-                    id = db.insert(tableName, null, values);
+                    id = db.insertOrThrow(tableName, null, values);
                     helper.setId(obj, (int) id);
                     db.setTransactionSuccessful();
                 } catch (Exception e) {
@@ -153,7 +153,7 @@ public class DaoManager {
         @Override
         public void update(T obj) {
             if (obj != null) {
-                SQLiteDatabase db = DbHelperManager.getInstance().getWritableDatabase();
+                SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
                 try {
                     db.beginTransaction();
                     ContentValues values = helper.objectToContentValues(obj);
@@ -176,7 +176,7 @@ public class DaoManager {
 
         @Override
         public void delete(int id) {
-            SQLiteDatabase db = DbHelperManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
             try {
                 db.beginTransaction();
                 db.delete(tableName, BaseColumns._ID + " = ?", new String[]{String.valueOf(id)});
@@ -190,7 +190,7 @@ public class DaoManager {
 
         @Override
         public void deleteAll() {
-            SQLiteDatabase db = DbHelperManager.getInstance().getWritableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getWritableDatabase();
             try {
                 db.beginTransaction();
                 db.execSQL("delete from " + tableName);
@@ -204,7 +204,7 @@ public class DaoManager {
 
         @Override
         public List<T> findAll() {
-            SQLiteDatabase db = DbHelperManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames, null, null, null, null, null)) {
                 List<T> list = new ArrayList<>();
                 while (cursor.moveToNext()) {
@@ -223,7 +223,7 @@ public class DaoManager {
                 return Collections.emptyList();
             }
 
-            SQLiteDatabase db = DbHelperManager.getInstance().getReadableDatabase();
+            SQLiteDatabase db = DbManager.getInstance().getReadableDatabase();
             try (Cursor cursor = db.rawQuery(query, columnNames)) {
                 List<T> list = new ArrayList<>();
                 while (cursor.moveToNext()) {
