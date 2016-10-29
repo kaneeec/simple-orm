@@ -177,7 +177,7 @@ public class DaoManager {
             SQLiteDatabase db = DbManager.getHelper().getWritableDatabase();
             try {
                 db.beginTransaction();
-                db.execSQL("delete from " + tableName);
+                db.delete(tableName, null, null);
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();

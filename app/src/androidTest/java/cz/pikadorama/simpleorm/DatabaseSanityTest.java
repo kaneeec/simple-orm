@@ -14,6 +14,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 import cz.pikadorama.simpleorm.annotation.DbColumn;
 import cz.pikadorama.simpleorm.annotation.DbTable;
 import cz.pikadorama.simpleorm.dao.Dao;
@@ -28,6 +30,8 @@ public class DatabaseSanityTest {
     public static final String TEXT_COLUMN_NAME = "text";
     public static final String TEST_TABLE_NAME = "TestEntityTable";
 
+    private static final Dao<TestEntity> dao = DaoManager.getDao(TestEntity.class);
+
     @BeforeClass
     public static void prepareDatabase() throws InstantiationException, IllegalAccessException {
         Context context = InstrumentationRegistry.getTargetContext();
@@ -37,38 +41,26 @@ public class DatabaseSanityTest {
 
     @Before
     public void clearDatabase() {
-        DaoManager.getDao(TestEntity.class).deleteAll();
+        dao.deleteAll();
     }
 
     @Test
     public void testInsert() {
-        Dao<TestEntity> dao = DaoManager.getDao(TestEntity.class);
         dao.create(new TestEntity());
-        dao.create(new TestEntity());
-        assertEquals(2, dao.findAll().size());
+        assertEquals(1, dao.findAll().size());
     }
 
     @Test
     public void testDelete() {
-        Dao<TestEntity> dao = DaoManager.getDao(TestEntity.class);
         TestEntity entity = new TestEntity();
         dao.create(entity);
         dao.delete(entity);
+        
         assertEquals(0, dao.findAll().size());
     }
 
     @Test
-    public void testGetById() {
-        Dao<TestEntity> dao = DaoManager.getDao(TestEntity.class);
-        TestEntity entity = new TestEntity();
-        dao.create(entity);
-        TestEntity foundEntity = dao.getById(entity.getId());
-        assertEquals(entity, foundEntity);
-    }
-
-    @Test
     public void testUpdate() {
-        Dao<TestEntity> dao = DaoManager.getDao(TestEntity.class);
         TestEntity entity = new TestEntity();
         dao.create(entity);
 
@@ -79,6 +71,32 @@ public class DatabaseSanityTest {
         assertEquals("bar", foundEntity.getText());
     }
 
+    @Test
+    public void testGetById() {
+        TestEntity entity = new TestEntity();
+        dao.create(entity);
+
+        TestEntity foundEntity = dao.getById(entity.getId());
+        assertEquals(entity, foundEntity);
+    }
+
+    @Test
+    public void testDeleteAll() {
+        TestEntity entity = new TestEntity();
+        dao.create(entity);
+        dao.deleteAll();
+
+        assertEquals(0, dao.findAll().size());
+    }
+
+    @Test
+    public void testQuery() {
+        dao.create(new TestEntity());
+        dao.create(new TestEntity());
+
+        List<TestEntity> entities = dao.query("select * from " + TEST_TABLE_NAME + " where " + BaseColumns._ID + " = 1", null);
+        assertEquals(1, entities.size());
+    }
 
     @DbTable(name = TEST_TABLE_NAME, mappingClass = TestEntityQueryHelper.class)
     private static final class TestEntity {
