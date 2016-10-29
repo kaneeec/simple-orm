@@ -10,6 +10,7 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -20,12 +21,6 @@ import cz.pikadorama.simpleorm.dao.DaoQueryHelper;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Instrumentation test, which will execute on an Android device.
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
- */
-// FIXME: http://stackoverflow.com/questions/30082008/attempt-to-write-a-readonly-database-but-im-not
 @RunWith(AndroidJUnit4.class)
 public class DatabaseSanityTest {
 
@@ -33,11 +28,16 @@ public class DatabaseSanityTest {
     public static final String TEXT_COLUMN_NAME = "text";
     public static final String TEST_TABLE_NAME = "TestEntityTable";
 
-    @Before
-    public void prepareDatabase() throws InstantiationException, IllegalAccessException {
+    @BeforeClass
+    public static void prepareDatabase() throws InstantiationException, IllegalAccessException {
         Context context = InstrumentationRegistry.getTargetContext();
         context.deleteDatabase(DATABASE_NAME);
-        DbManager.registerHelper(new TestSQLiteHelper(context), new Class<?>[]{TestEntity.class});
+        DbManager.registerHelper(new TestSQLiteHelper(context), TestEntity.class);
+    }
+
+    @Before
+    public void clearDatabase() {
+        DaoManager.getDao(TestEntity.class).deleteAll();
     }
 
     @Test
@@ -123,7 +123,6 @@ public class DatabaseSanityTest {
 
             if (!id.equals(entity.id)) return false;
             return text != null ? text.equals(entity.text) : entity.text == null;
-
         }
 
         @Override

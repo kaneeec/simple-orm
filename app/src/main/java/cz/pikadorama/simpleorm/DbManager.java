@@ -76,7 +76,6 @@ public final class DbManager {
                     "There is no SQLiteOpenHelper implementation registered.");
         }
         return helper;
-
     }
 
     /**
