@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/simple-orm.iml" filepath="$PROJECT_DIR$/simple-orm.iml" />
       <module fileurl="file://$PROJECT_DIR$/simple-orm.iml" filepath="$PROJECT_DIR$/simple-orm.iml" />
       <module fileurl="file://$PROJECT_DIR$/simple-orm-lib/simple-orm-lib.iml" filepath="$PROJECT_DIR$/simple-orm-lib/simple-orm-lib.iml" />
     </modules>
