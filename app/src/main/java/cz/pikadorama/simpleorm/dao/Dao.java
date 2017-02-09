@@ -65,7 +65,7 @@ public interface Dao<T> {
     /**
      * Custom query.
      *
-     * @param query query
+     * @param query       query
      * @param columnNames column names to select
      * @return list of all objects that satisfy the query or empty list
      */

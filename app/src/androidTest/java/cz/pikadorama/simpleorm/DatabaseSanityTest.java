@@ -55,7 +55,7 @@ public class DatabaseSanityTest {
         TestEntity entity = new TestEntity();
         dao.create(entity);
         dao.delete(entity);
-        
+
         assertEquals(0, dao.findAll().size());
     }
 
@@ -94,8 +94,11 @@ public class DatabaseSanityTest {
         dao.create(new TestEntity());
         dao.create(new TestEntity());
 
-        List<TestEntity> entities = dao.query("select * from " + TEST_TABLE_NAME + " where " + BaseColumns._ID + " = 1", null);
-        assertEquals(1, entities.size());
+        List<TestEntity> oneEntity = dao.query("select * from " + TEST_TABLE_NAME + " where " + BaseColumns._ID + " = 1", null);
+        assertEquals(1, oneEntity.size());
+
+        List<TestEntity> twoEntities = dao.query("select * from " + TEST_TABLE_NAME, null);
+        assertEquals(2, twoEntities.size());
     }
 
     @DbTable(name = TEST_TABLE_NAME, mappingClass = TestEntityQueryHelper.class)

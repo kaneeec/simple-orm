@@ -5,9 +5,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 import android.util.Log;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -152,12 +149,11 @@ public final class DbManager {
 
     private static List<String> getColumnNames(Class<?> clazz) {
         List<DbColumn> columns = getDbColumns(clazz);
-        return Lists.transform(columns, new Function<DbColumn, String>() {
-            @Override
-            public String apply(DbColumn input) {
-                return input.name();
-            }
-        });
+        List<String> columnNames = new ArrayList<>();
+        for (DbColumn column : columns) {
+            columnNames.add(column.name());
+        }
+        return columnNames;
     }
 
     private static List<DbColumn> getDbColumns(Class<?> clazz) {

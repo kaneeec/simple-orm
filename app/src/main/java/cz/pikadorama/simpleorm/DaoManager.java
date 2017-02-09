@@ -4,13 +4,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
-import android.util.Log;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +14,6 @@ import cz.pikadorama.simpleorm.annotation.DbColumn;
 import cz.pikadorama.simpleorm.annotation.DbTable;
 import cz.pikadorama.simpleorm.dao.Dao;
 import cz.pikadorama.simpleorm.dao.DaoQueryHelper;
-import cz.pikadorama.simpleorm.util.Const;
 import cz.pikadorama.simpleorm.util.Strings;
 
 /**
@@ -107,12 +101,10 @@ public class DaoManager {
 
         @Override
         public List<T> getByIds(List<Integer> ids) {
-            List<String> stringIds = Lists.transform(ids, new Function<Integer, String>() {
-                @Override
-                public String apply(Integer input) {
-                    return String.valueOf(input);
-                }
-            });
+            List<String> stringIds = new ArrayList<>();
+            for (Integer id : ids) {
+                stringIds.add(String.valueOf(id));
+            }
 
             SQLiteDatabase db = DbManager.getHelper().getReadableDatabase();
             try (Cursor cursor = db.query(tableName, columnNames,

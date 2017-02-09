@@ -12,12 +12,13 @@ public class Strings {
 
     private static final String DEFAULT_DELIMITER = ",";
 
-    private Strings() {}
+    private Strings() {
+    }
 
     /**
      * Join strings with the given delimiter.
      *
-     * @param strings list of strings to join
+     * @param strings   list of strings to join
      * @param delimiter delimiter
      * @return strings joined by the given delimiter
      * @throws IllegalArgumentException in case anz parameter is null
@@ -50,7 +51,7 @@ public class Strings {
     /**
      * Splits the given string with the delimiter and returns list of parts.
      *
-     * @param string string to split
+     * @param string    string to split
      * @param delimiter delimiter to use
      * @return list of parts
      */

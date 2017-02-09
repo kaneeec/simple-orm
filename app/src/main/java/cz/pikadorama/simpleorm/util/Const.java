@@ -8,6 +8,6 @@ public class Const {
     /**
      * Tag for the Framework loggers.
      */
-    public static final String TAG = "FWK";
+    public static final String TAG = "simple-orm-log";
 
 }
