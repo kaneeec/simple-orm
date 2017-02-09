@@ -94,3 +94,6 @@ Dao<MyEntity> dao = DaoManager.getDao(MyEntity.class);
 dao.create(myEntityInstance); // save entity to database table
 ...
 ```
+
+# Releases
+[ ![Download](https://api.bintray.com/packages/kaneeec/cz.pikadorama/simple-orm/images/download.svg?version=1.0) ](https://bintray.com/kaneeec/cz.pikadorama/simple-orm/1.0/link)
