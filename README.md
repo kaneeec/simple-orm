@@ -5,6 +5,11 @@ Simple ORM framework for Android
 The main purpose of this library is to get rid of all the boilerplate code and have a type safe ORM mapping for Android.
 
 # Usage
+## Include the dependency in your Gradle config
+```
+compile 'cz.pikadorama:simple-orm-lib:release'
+```
+
 ## Implement SQLite helper as usual
 ... just specify your database name and version and you would normally do.
 ```
@@ -93,11 +98,6 @@ DbManager.registerHelper(new MyHelper(context), MyEntity.class);
 Dao<MyEntity> dao = DaoManager.getDao(MyEntity.class);
 dao.create(myEntityInstance); // save entity to database table
 ...
-```
-
-# Releases
-```
-compile 'cz.pikadorama:simple-orm-lib:release'
 ```
 
 [ ![Download](https://api.bintray.com/packages/kaneeec/cz.pikadorama/simple-orm/images/download.svg?version=1.0) ](https://bintray.com/kaneeec/cz.pikadorama/simple-orm/1.0/link)
