@@ -8,8 +8,8 @@ import cz.pikadorama.simpleorm.annotation.DbTable;
 /**
  * Each database table (e.i. entity with {@link DbTable} annotation}) must add the
  * {@link DbTable#mappingClass()} attribute which accepts implementation of this interface.
- * <p/>
- * This is used to transform POJO <-> Cursor
+ *
+ * This is used to transform POJO --- Cursor
  */
 public interface DaoQueryHelper<T> {
 

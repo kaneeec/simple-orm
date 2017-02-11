@@ -10,7 +10,7 @@ import cz.pikadorama.simpleorm.DbDataType;
 
 /**
  * Annotation for database columns.
- * <p/>
+ *
  * NOTE: if you annotate an ID column with autoincrement option, make sure that the data type is
  * {@link DbDataType#INTEGER}.
  */

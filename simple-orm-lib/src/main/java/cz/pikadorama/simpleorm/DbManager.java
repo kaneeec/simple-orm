@@ -33,7 +33,7 @@ public final class DbManager {
      * Register your {@link SQLiteOpenHelper} implementation. After the helper is registered, whole database
      * structure is created and initialized. You can then use {@link DaoManager#getDao(Class)}
      * to get DAO implementations for desired classes.
-     * <p/>
+     *
      * The helper defines your database name and version. It can also provide possible upgrade scripts between
      * versions.
      *
